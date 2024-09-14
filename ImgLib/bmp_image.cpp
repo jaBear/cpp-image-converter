@@ -36,19 +36,22 @@ PACKED_STRUCT_END
 
 // функция вычисления отступа по ширине
 static int GetBMPStride(int w) {
-    return 4 * ((w * 3 + 3) / 4);
+    const int colors_count = 3;
+    const int padding = 4;
+    return padding * ((w * colors_count + colors_count) / padding);
 }
 
 // напишите эту функцию
 bool SaveBMP(const Path& file, const Image& image) {
     ofstream out(file, ios::binary);
     
-    int w = image.GetWidth();
-    int h = image.GetHeight();
-    int stride = GetBMPStride(w);
+    const int w = image.GetWidth();
+    const int h = image.GetHeight();
+    const int stride = GetBMPStride(w);
+    const int header_size = 54;
     
     BitmapFileHeader file_h;
-    file_h.size = 54 + (stride * h);
+    file_h.size = header_size + (stride * h);
     BitmapInfoHeader info_h;
     info_h.width = w;
     info_h.height = h;
@@ -81,14 +84,12 @@ Image LoadBMP(const Path& file) {
     BitmapFileHeader file_h;
     BitmapInfoHeader info_h;
     
-    ifs.read((char*)&file_h, sizeof(file_h));
-    ifs.read((char*)&info_h, sizeof(info_h));
-
-    if(file_h.type[0] != 'B' && file_h.type[1] != 'M') {
+    if (!ifs.read((char*)&file_h, sizeof(file_h)) && !ifs.read((char*)&info_h, sizeof(info_h));)
         return {};
-    }
-    
-    ifs.seekg(file_h.offset_data, ifs.beg);
+    if(file_h.type[0] != 'B' && file_h.type[1] != 'M')
+        return {};
+    if (!ifs.seekg(file_h.offset_data, ifs.beg))
+        return {};
     
     int w = info_h.width;
     int h = info_h.height;
